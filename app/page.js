@@ -94,7 +94,7 @@ export default function Home() {
               <DialogTitle>How to Play</DialogTitle>
               <div><ul className="list-disc list-inside space-y-1 mt-2">
                   <li className={"mb-4"}>Guess the three trending words of the day—letter by letter.</li>
-                    <li className={"mb-4"}>You can guess any <strong>letter (A–Z)</strong> or <strong>digit (0–9)</strong>.</li>
+                    <li className={"mb-4"}>You can guess any <strong>letter (A–Z)</strong>, <strong>digit (0–9)</strong> or <strong>special character</strong>.</li>
                     <li className={"mb-4"}>If your guess appears in any word, it will be revealed in the correct spots.</li>
                     <li className={"mb-4"}><strong>No back-to-back vowel guesses</strong> (A, E, I, O, U).</li>
                     <li className={"mb-4"}>The fewer guesses and mistakes you make, the higher your score.</li>
@@ -118,7 +118,7 @@ export default function Home() {
       {!gameOver && (
         <div className="mt-6 flex items-center space-x-2">
           <Input
-            placeholder="Enter a letter or number"
+            placeholder="Enter a letter, number, or special character"
             value={input}
             maxLength={1}
             onChange={e => setInput(e.target.value)}
