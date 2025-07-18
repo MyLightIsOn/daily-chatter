@@ -19,7 +19,7 @@ export async function GET() {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
+        {//TODO the same few words are chosen each time. Maybe have to send a randomized set to the AI to select from
           role: "system",
           content: `You will select 3 words for a hangman like game. Here is a JSON array of words and phrases. The word selection should be random. Do not just pick the first few words. Look through the entire JSON first. It is a game so the words should not be offensive, adult content, too short, or too long. Return only the 3 selected grams as an array of strings, nothing else. Choose diverse and interesting grams that would make for a good word game.\n\n${fileContents}`
         }

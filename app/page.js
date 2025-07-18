@@ -27,6 +27,10 @@ function updateRevealedWords(guesses, words) {
 }
 
 function isGameComplete(revealedWords) {
+  // If there are no revealed words yet or the array is empty, the game is not complete
+  if (!revealedWords || revealedWords.length === 0) {
+    return false;
+  }
   return revealedWords.every(word => word.every(char => char !== '_'));
 }
 
@@ -122,8 +126,6 @@ export default function Home() {
           )
         )
     : null;
-
-  console.log(words);
 
   return (
     <div className="max-w-xl mx-auto p-4">
