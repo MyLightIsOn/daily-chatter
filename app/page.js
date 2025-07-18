@@ -7,14 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
 
-// This will be replaced with data from the API
-const defaultWords = ["andy dalton", "fully", "@potus"];
 const vowels = ['a', 'e', 'i', 'o', 'u'];
 
 function initializeState(words) {
@@ -35,6 +32,10 @@ function isGameComplete(revealedWords) {
 
 function getStarRating(guesses, incorrect) {
   const total = guesses.length;
+
+  // Handle case when there are no guesses
+  if (total === 0) return '⭐⭐⭐'; // Perfect score for no guesses (edge case)
+
   const accuracy = 1 - incorrect.length / total;
 
   if (total <= 12 && accuracy >= 0.9) return '⭐⭐⭐';
@@ -43,12 +44,12 @@ function getStarRating(guesses, incorrect) {
 }
 
 export default function Home() {
-  const [words, setWords] = useState(defaultWords);
+  const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [guesses, setGuesses] = useState([]);
   const [input, setInput] = useState('');
-  const [revealed, setRevealed] = useState(initializeState(defaultWords));
+  const [revealed, setRevealed] = useState([]);
   const [incorrect, setIncorrect] = useState([]);
   const [lastGuessWasVowel, setLastGuessWasVowel] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -71,12 +72,12 @@ export default function Home() {
           setWords(data.grams);
           setRevealed(initializeState(data.grams));
         } else {
-          console.warn('Unexpected data format from API, using default words', data);
+          console.warn('Unexpected data format from API', data);
+          setError('Unexpected data format from API');
         }
       } catch (err) {
         console.error('Error fetching words:', err);
         setError(err.message);
-        // Continue with default words on error
       } finally {
         setLoading(false);
       }
@@ -84,6 +85,7 @@ export default function Home() {
 
     fetchWords();
   }, []);
+
 
   useEffect(() => {
     setRevealed(updateRevealedWords(guesses, words));
@@ -111,13 +113,17 @@ export default function Home() {
   };
 
   const score = gameOver
-    ? Math.max(
-        0,
-        Math.floor(
-          (36 - guesses.length) * (1 - incorrect.length / guesses.length)
+    ? guesses.length === 0
+      ? 36 // Maximum score if no guesses (unlikely but handles edge case)
+      : Math.max(
+          0,
+          Math.floor(
+            (36 - guesses.length) * (1 - incorrect.length / guesses.length)
+          )
         )
-      )
     : null;
+
+  console.log(words);
 
   return (
     <div className="max-w-xl mx-auto p-4">
@@ -144,53 +150,60 @@ export default function Home() {
       {loading ? (
         <div className="flex justify-center items-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="ml-4 text-lg">Loading trending words...</p>
+          <p className="ml-4 text-lg">AI selecting trending words...</p>
         </div>
       ) : error ? (
         <div className="p-4 bg-red-100 text-red-700 rounded mb-4">
           <p>Error loading trending words: {error}</p>
-          <p>Using default words instead.</p>
+          <p>Please try again later.</p>
         </div>
-      ) : null}
-
-      <div className="space-y-4">
-        {revealed.map((word, idx) => (
-          <Card key={idx}>
-            <CardContent className="text-xl font-mono p-4 tracking-wide">
-              {word.join(' ')}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {!gameOver && (
-        <div className="mt-6 flex items-center space-x-2">
-          <Input
-            placeholder="Enter a letter, number, or special character"
-            value={input}
-            maxLength={1}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleGuess()}
-          />
-          <button onClick={handleGuess} className="bg-blue-500 text-white px-4 py-2 rounded">
-            Guess
-          </button>
+      ) : words.length === 0 ? (
+        <div className="p-4 bg-yellow-100 text-yellow-700 rounded mb-4">
+          <p>No words available. Please try again later.</p>
         </div>
-      )}
+      ) : (
+        /* Show game UI when not loading, no error, and words are loaded */
+        <>
+          <div className="space-y-4">
+            {revealed.map((word, idx) => (
+              <Card key={idx}>
+                <CardContent className="text-xl font-mono p-4 tracking-wide">
+                  {word.join(' ')}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      <div className="mt-4">
-        <p className="text-sm text-gray-600">Incorrect guesses: {incorrect.join(', ')}</p>
-        <p className="text-sm text-gray-600">Total guesses: {guesses.length}</p>
-      </div>
+          {!gameOver && (
+            <div className="mt-6 flex items-center space-x-2">
+              <Input
+                placeholder="Enter a letter, number, or special character"
+                value={input}
+                maxLength={1}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleGuess()}
+              />
+              <button onClick={handleGuess} className="bg-blue-500 text-white px-4 py-2 rounded">
+                Guess
+              </button>
+            </div>
+          )}
 
-      {gameOver && (
-        <div className="mt-6 p-4 bg-green-100 rounded shadow">
-          <h2 className="text-lg font-bold mb-2">🎉 Game Complete!</h2>
-          <p className="text-2xl">{getStarRating(guesses, incorrect)}</p>
-          <p className="text-sm">Your Score: <span className="font-mono">{score}</span></p>
-          <p className="text-sm">Incorrect Guesses: {incorrect.length}</p>
-          <p className="text-sm">Accuracy: {((1 - incorrect.length / guesses.length) * 100).toFixed(1)}%</p>
-        </div>
+          <div className="mt-4">
+            <p className="text-sm text-gray-600">Incorrect guesses: {incorrect.join(', ')}</p>
+            <p className="text-sm text-gray-600">Total guesses: {guesses.length}</p>
+          </div>
+
+          {gameOver && (
+            <div className="mt-6 p-4 bg-green-100 rounded shadow">
+              <h2 className="text-lg font-bold mb-2">🎉 Game Complete!</h2>
+              <p className="text-2xl">{getStarRating(guesses, incorrect)}</p>
+              <p className="text-sm">Your Score: <span className="font-mono">{score}</span></p>
+              <p className="text-sm">Incorrect Guesses: {incorrect.length}</p>
+              <p className="text-sm">Accuracy: {guesses.length === 0 ? '100.0' : ((1 - incorrect.length / guesses.length) * 100).toFixed(1)}%</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
