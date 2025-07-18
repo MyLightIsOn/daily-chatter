@@ -13,7 +13,8 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 
-const mockWords = ["andy dalton", "fully", "@potus"];
+// This will be replaced with data from the API
+const defaultWords = ["andy dalton", "fully", "@potus"];
 const vowels = ['a', 'e', 'i', 'o', 'u'];
 
 function initializeState(words) {
@@ -42,16 +43,51 @@ function getStarRating(guesses, incorrect) {
 }
 
 export default function Home() {
+  const [words, setWords] = useState(defaultWords);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [guesses, setGuesses] = useState([]);
   const [input, setInput] = useState('');
-  const [revealed, setRevealed] = useState(initializeState(mockWords));
+  const [revealed, setRevealed] = useState(initializeState(defaultWords));
   const [incorrect, setIncorrect] = useState([]);
   const [lastGuessWasVowel, setLastGuessWasVowel] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
+  // Fetch trending words from the API
   useEffect(() => {
-    setRevealed(updateRevealedWords(guesses, mockWords));
-  }, [guesses]);
+    async function fetchWords() {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/grams');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch words');
+        }
+
+        const data = await response.json();
+
+        // Check if we have the expected data format
+        if (data.grams && Array.isArray(data.grams) && data.grams.length === 3) {
+          setWords(data.grams);
+          setRevealed(initializeState(data.grams));
+        } else {
+          console.warn('Unexpected data format from API, using default words', data);
+        }
+      } catch (err) {
+        console.error('Error fetching words:', err);
+        setError(err.message);
+        // Continue with default words on error
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchWords();
+  }, []);
+
+  useEffect(() => {
+    setRevealed(updateRevealedWords(guesses, words));
+  }, [guesses, words]);
 
   useEffect(() => {
     if (isGameComplete(revealed)) {
@@ -69,7 +105,7 @@ export default function Home() {
     setGuesses(prev => [...prev, char]);
     setLastGuessWasVowel(vowels.includes(char));
 
-    if (!mockWords.some(word => word.toLowerCase().includes(char))) {
+    if (!words.some(word => word.toLowerCase().includes(char))) {
       setIncorrect(prev => [...prev, char]);
     }
   };
@@ -104,6 +140,18 @@ export default function Home() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="ml-4 text-lg">Loading trending words...</p>
+        </div>
+      ) : error ? (
+        <div className="p-4 bg-red-100 text-red-700 rounded mb-4">
+          <p>Error loading trending words: {error}</p>
+          <p>Using default words instead.</p>
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         {revealed.map((word, idx) => (
