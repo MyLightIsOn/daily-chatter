@@ -21,47 +21,15 @@ export async function GET() {
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that selects interesting trending words or phrases."
-        },
-        {
-          role: "user",
-          content: `Here is a JSON array of trending words and phrases. Please select exactly 3 interesting grams from this data. Return only the 3 selected grams as a JSON array of strings, nothing else. Choose diverse and interesting grams that would make for a good word game.\n\n${fileContents}`
+          content: `You will select 3 words for a hangman like game. Here is a JSON array of words and phrases. The word selection should be random. Do not just pick the first few words. Look through the entire JSON first. It is a game so the words should not be offensive, adult content, too short, or too long. Return only the 3 selected grams as an array of strings, nothing else. Choose diverse and interesting grams that would make for a good word game.\n\n${fileContents}`
         }
       ],
-      response_format: { type: "json_object" }
     });
 
     // Parse the response to get the 3 grams
     const selectedGramsData = JSON.parse(response.choices[0].message.content);
+    const grams = selectedGramsData
 
-    // Extract the grams array or create one from the response
-    let grams = [];
-    if (Array.isArray(selectedGramsData)) {
-      // If the response is already an array
-      grams = selectedGramsData;
-    } else if (selectedGramsData.grams && Array.isArray(selectedGramsData.grams)) {
-      // If the response has a grams property that is an array
-      grams = selectedGramsData.grams;
-    } else if (typeof selectedGramsData === 'object') {
-      // If the response is an object with other properties
-      // Try to extract gram values from the object
-      const possibleGrams = Object.values(selectedGramsData)
-        .filter(value => typeof value === 'string')
-        .slice(0, 3);
-
-      if (possibleGrams.length > 0) {
-        grams = possibleGrams;
-      }
-    }
-
-    // Ensure we have exactly 3 grams
-    if (grams.length !== 3) {
-      // If we don't have exactly 3 grams, extract from the original data
-      const extractedGrams = wordsData
-        .slice(0, 3)
-        .map(item => item.gram);
-      grams = extractedGrams;
-    }
 
     // Return the selected grams in the expected format
     return NextResponse.json({ grams });
